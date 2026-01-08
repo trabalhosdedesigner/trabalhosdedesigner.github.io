@@ -125,8 +125,17 @@ let step = 0;
 let mediaRecorder;
 let audioChunks = [];
 
+// 🔹 Recupera o tipo do serviço vindo da página anterior
+let tipoServico = localStorage.getItem("servico");
+
+if (!tipoServico) {
+  alert("Erro: Nenhum serviço selecionado.");
+  window.location.href = "index.html";
+}
+
 // 🔹 OBJETO para armazenar os dados
 let formData = {
+  tipo: tipoServico, // << salva o tipo aqui
   nomeMarca: "",
   descricao: "",
   arquivos: []
@@ -145,15 +154,16 @@ function botTyping(text, delay=800) {
 }
 
 function start() {
-  botTyping("Olá! Vou te ajudar a criar seu logotipo 🙂");
-  botTyping("Para começar, qual é o nome da marca?", 1600);
-  setTimeout(() => inputText.classList.remove("hidden"), 1800);
+  const nomeTipo = tipoServico === "logo" ? "Logotipo" : "Logo Animado";
+  botTyping(`Serviço selecionado: ${nomeTipo}`);
+  botTyping("Olá! Vou te ajudar com seu projeto 🙂", 1200);
+  botTyping("Para começar, qual é o nome da marca?", 2000);
+  setTimeout(() => inputText.classList.remove("hidden"), 2200);
 }
 
 function sendText() {
   if (!textInput.value.trim()) return;
 
-  // 🔹 SALVA NOME DA MARCA
   formData.nomeMarca = textInput.value.trim();
 
   addMessage(textInput.value, "user");
@@ -170,7 +180,6 @@ function toggleButton() {
 function handleAction() {
   if (textInput2.value.trim()) {
 
-    // 🔹 SALVA DESCRIÇÃO
     formData.descricao = textInput2.value.trim();
 
     addMessage(textInput2.value, "user");
@@ -194,11 +203,6 @@ function recordAudio() {
 
     mediaRecorder.onstop = () => {
       addMessage("🎙️ Áudio enviado", "user");
-
-      // Se quiser salvar áudio no futuro, só ativar:
-      // const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-      // formData.audio = audioBlob;
-
       audioChunks = [];
       toggleButton();
       inputTextAudio.classList.add("hidden");
@@ -215,7 +219,7 @@ function recordAudio() {
 
 function nextStep() {
   if (step === 1) {
-    botTyping("Agora me conta um pouco sobre a ideia.");
+    botTyping("Agora me conte um pouco sobre a ideia.");
     botTyping("Pode escrever ou gravar um áudio.", 1200);
     setTimeout(() => inputTextAudio.classList.remove("hidden"), 1500);
   } else if (step === 2) {
@@ -228,7 +232,7 @@ function finish() {
   const files = document.getElementById("fileInput").files;
 
   if (files.length > 0) {
-    formData.arquivos = [...files]; // 🔹 SALVA ARQUIVOS
+    formData.arquivos = [...files];
     addMessage("📎 Anexos enviados", "user");
   } else {
     addMessage("Nenhum anexo enviado", "user");
@@ -254,7 +258,6 @@ function createPaymentButton() {
 }
 
 function goToPayment() {
-  // 🔹 SALVA TUDO NA LOCALSTORAGE
   localStorage.setItem("logoForm", JSON.stringify(formData));
   window.location.href = "pagamento.html";
 }
