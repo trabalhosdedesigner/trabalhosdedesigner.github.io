@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trabalhos de Designer</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.chat-container {
+  width: 100%;
+  max-width: 420px;
+  background: #020617;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6);
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+}
+
+.bot {
+  background: #1e293b;
+  align-self: flex-start;
+}
+
+.user {
+  background: #2563eb;
+  align-self: flex-end;
+}
+
+.input-area {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+}
+
+button {
+  background: #2563eb;
+  border: none;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.hidden {
+  display: none;
+}
+
+.upload {
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat-container">
+  <div id="chat" class="chat"></div>
+
+  <!-- INPUT TEXTO (SEM ÁUDIO NO PRIMEIRO PASSO) -->
+  <div id="inputText" class="input-area hidden">
+    <input type="text" id="textInput" placeholder="Digite aqui..." />
+    <button id="sendBtn" onclick="sendText()">Enviar</button>
+  </div>
+
+  <!-- INPUT TEXTO + ÁUDIO (SEGUNDO PASSO) -->
+  <div id="inputTextAudio" class="input-area hidden">
+    <input type="text" id="textInput2" placeholder="Digite ou grave um áudio..." oninput="toggleButton()" />
+    <button id="actionBtn" onclick="handleAction()">🎙️</button>
+  </div>
+
+<div id="inputUpload" class="upload hidden">
+  <input type="file" id="fileInput" multiple />
+  <button onclick="finish()">Finalizar</button>
+</div>
+
+
+<script>
+const chat = document.getElementById("chat");
+
+const inputText = document.getElementById("inputText");
+const inputTextAudio = document.getElementById("inputTextAudio");
+const inputUpload = document.getElementById("inputUpload");
+
+const textInput = document.getElementById("textInput");
+const textInput2 = document.getElementById("textInput2");
+const actionBtn = document.getElementById("actionBtn");
+
+let step = 0;
+let mediaRecorder;
+let audioChunks = [];
+
+function addMessage(text, type="bot") {
+  const msg = document.createElement("div");
+  msg.className = `msg ${type}`;
+  msg.innerText = text;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function botTyping(text, delay=800) {
+  setTimeout(() => addMessage(text, "bot"), delay);
+}
+
+function start() {
+  botTyping("Olá! Vou te ajudar a criar seu logotipo 🙂");
+  botTyping("Para começar, qual é o nome da marca?", 1600);
+  setTimeout(() => inputText.classList.remove("hidden"), 1800);
+}
+
+function sendText() {
+  if (!textInput.value.trim()) return;
+  addMessage(textInput.value, "user");
+  textInput.value = "";
+  inputText.classList.add("hidden");
+  step++;
+  nextStep();
+}
+
+function toggleButton() {
+  actionBtn.innerText = textInput2.value.trim() ? "➤" : "🎙️";
+}
+
+function handleAction() {
+  if (textInput2.value.trim()) {
+    addMessage(textInput2.value, "user");
+    textInput2.value = "";
+    toggleButton();
+    inputTextAudio.classList.add("hidden");
+    step++;
+    nextStep();
+  } else {
+    recordAudio();
+  }
+}
+
+function recordAudio() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.start();
+    actionBtn.innerText = "⏹️";
+
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+    mediaRecorder.onstop = () => {
+      addMessage("🎙️ Áudio enviado", "user");
+      audioChunks = [];
+      toggleButton();
+      inputTextAudio.classList.add("hidden");
+      step++;
+      nextStep();
+    };
+
+    actionBtn.onclick = () => {
+      mediaRecorder.stop();
+      actionBtn.onclick = handleAction;
+    };
+  });
+}
+
+function nextStep() {
+  if (step === 1) {
+    botTyping("Agora me conta um pouco sobre a ideia.");
+    botTyping("Pode escrever ou gravar um áudio.", 1200);
+    setTimeout(() => inputTextAudio.classList.remove("hidden"), 1500);
+  } else if (step === 2) {
+    botTyping("Agora envie referências visuais.");
+    setTimeout(() => inputUpload.classList.remove("hidden"), 1500);
+  }
+}
+
+function finish() {
+  const files = document.getElementById("fileInput").files;
+
+  if (files.length > 0) {
+    addMessage("📎 Anexos enviados", "user");
+  } else {
+    addMessage("Nenhum anexo enviado", "user");
+  }
+
+  inputUpload.classList.add("hidden");
+
+  botTyping("Perfeito! Já consigo iniciar seu projeto.");
+  botTyping("📌 1 revisão inclusa • Prazo de até 3 dias", 1200);
+}
+
+
+start();
+</script>
+
+</body>
+</html>
