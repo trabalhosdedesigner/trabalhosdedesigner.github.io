@@ -224,14 +224,19 @@
     document.getElementById('filter').scrollIntoView({ behavior: 'smooth' });
   }
 
-  function goToBriefing() {
-    alert(
-      "Próximo passo:\n\n" +
-      "• Abrir formulário de briefing\n" +
-      "• Confirmar pagamento via Pix\n\n" +
-      "(Integração será feita no próximo passo)"
-    );
+function goToBriefing() {
+  if (!selectedService) {
+    alert("Por favor, selecione um serviço antes de continuar.");
+    return;
   }
+
+  // salva o serviço escolhido
+  localStorage.setItem("servico", selectedService);
+
+  // redireciona para a página de briefing
+  window.location.href = "detalhes.html";
+}
+
 </script>
 
 </body>
