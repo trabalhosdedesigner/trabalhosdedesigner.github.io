@@ -92,13 +92,11 @@ button {
 <div class="chat-container">
   <div id="chat" class="chat"></div>
 
-  <!-- INPUT TEXTO (SEM ÁUDIO NO PRIMEIRO PASSO) -->
   <div id="inputText" class="input-area hidden">
     <input type="text" id="textInput" placeholder="Digite aqui..." />
     <button id="sendBtn" onclick="sendText()">Enviar</button>
   </div>
 
-  <!-- INPUT TEXTO + ÁUDIO (SEGUNDO PASSO) -->
   <div id="inputTextAudio" class="input-area hidden">
     <input type="text" id="textInput2" placeholder="Digite ou grave um áudio..." oninput="toggleButton()" />
     <button id="actionBtn" onclick="handleAction()">🎙️</button>
@@ -112,7 +110,6 @@ button {
 
 <script>
 const chat = document.getElementById("chat");
-
 const inputText = document.getElementById("inputText");
 const inputTextAudio = document.getElementById("inputTextAudio");
 const inputUpload = document.getElementById("inputUpload");
@@ -125,7 +122,7 @@ let step = 0;
 let mediaRecorder;
 let audioChunks = [];
 
-// 🔹 Recupera o tipo do serviço vindo da página anterior
+// serviço anterior
 let tipoServico = localStorage.getItem("servico");
 
 if (!tipoServico) {
@@ -133,9 +130,8 @@ if (!tipoServico) {
   window.location.href = "index.html";
 }
 
-// 🔹 OBJETO para armazenar os dados
 let formData = {
-  tipo: tipoServico, // << salva o tipo aqui
+  tipo: tipoServico,
   nomeMarca: "",
   descricao: "",
   arquivos: []
@@ -165,8 +161,7 @@ function sendText() {
   if (!textInput.value.trim()) return;
 
   formData.nomeMarca = textInput.value.trim();
-
-  addMessage(textInput.value, "user");
+  addMessage(formData.nomeMarca, "user");
   textInput.value = "";
   inputText.classList.add("hidden");
   step++;
@@ -179,10 +174,8 @@ function toggleButton() {
 
 function handleAction() {
   if (textInput2.value.trim()) {
-
     formData.descricao = textInput2.value.trim();
-
-    addMessage(textInput2.value, "user");
+    addMessage(formData.descricao, "user");
     textInput2.value = "";
     toggleButton();
     inputTextAudio.classList.add("hidden");
@@ -232,13 +225,41 @@ function finish() {
   const files = document.getElementById("fileInput").files;
 
   if (files.length > 0) {
-    formData.arquivos = [...files];
-    addMessage("📎 Anexos enviados", "user");
-  } else {
-    addMessage("Nenhum anexo enviado", "user");
-  }
+    const base64Files = [];
+    const promises = [];
 
+    for (let file of files) {
+      promises.push(
+        new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => {
+            base64Files.push({
+              nome: file.name,
+              tipo: file.type,
+              conteudo: e.target.result
+            });
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        })
+      );
+    }
+
+    Promise.all(promises).then(() => {
+      formData.arquivos = base64Files;
+      finalizeSubmit();
+    });
+
+  } else {
+    finalizeSubmit();
+  }
+}
+
+function finalizeSubmit() {
+  addMessage("📎 Dados capturados!", "user");
   inputUpload.classList.add("hidden");
+
+  localStorage.setItem("logoForm", JSON.stringify(formData));
 
   botTyping("Perfeito! Já consigo iniciar seu projeto.");
   botTyping("📌 1 revisão inclusa • Prazo de até 3 dias", 1200);
@@ -253,13 +274,8 @@ function createPaymentButton() {
   const btn = document.createElement("button");
   btn.innerText = "Ir para área de pagamentos";
   btn.style.marginTop = "10px";
-  btn.onclick = goToPayment;
+  btn.onclick = () => window.location.href = "pagamento.html";
   document.querySelector(".chat-container").appendChild(btn);
-}
-
-function goToPayment() {
-  localStorage.setItem("logoForm", JSON.stringify(formData));
-  window.location.href = "pagamento.html";
 }
 
 start();
