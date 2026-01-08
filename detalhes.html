@@ -24,15 +24,13 @@ body {
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 0 40px rgba(0,0,0,0.6);
-  display: flex;
-  flex-direction: column;
 }
 
 .chat {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 70vh;
+  max-height: 65vh;
   overflow-y: auto;
 }
 
@@ -43,15 +41,8 @@ body {
   font-size: 14px;
 }
 
-.bot {
-  background: #1e293b;
-  align-self: flex-start;
-}
-
-.user {
-  background: #2563eb;
-  align-self: flex-end;
-}
+.bot { background: #1e293b; align-self: flex-start; }
+.user { background: #2563eb; align-self: flex-end; }
 
 .input-area {
   margin-top: 12px;
@@ -59,12 +50,11 @@ body {
   gap: 8px;
 }
 
-input[type="text"] {
+input[type="text"], input[type="email"] {
   flex: 1;
   padding: 10px;
   border-radius: 10px;
   border: none;
-  outline: none;
 }
 
 button {
@@ -74,211 +64,215 @@ button {
   padding: 10px 14px;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
 }
 
-.hidden {
-  display: none;
+.hidden { display: none; }
+
+/* Pagamento */
+.payment {
+  background: #151515;
+  border-radius: 12px;
+  padding: 20px;
+  color: #fff;
+}
+
+.card {
+  background: #1c1c1c;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
 .upload {
-  margin-top: 10px;
+  border: 2px dashed #333;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.upload input { display: none; }
+
+.confirm {
+  width: 100%;
+  padding: 14px;
+  background: #2ecc71;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
 }
 </style>
 </head>
 
 <body>
 
-<div class="chat-container">
-  <div id="chat" class="chat"></div>
+<form class="chat-container"
+      action="https://api.web3forms.com/submit"
+      method="POST"
+      enctype="multipart/form-data">
 
-  <div id="inputText" class="input-area hidden">
-    <input type="text" id="textInput" placeholder="Digite aqui..." />
-    <button id="sendBtn" onclick="sendText()">Enviar</button>
+  <!-- Web3Forms -->
+  <input type="hidden" name="access_key" value="SUA_ACCESS_KEY_WEB3FORMS">
+
+  <!-- Dados -->
+  <input type="hidden" name="tipo" id="tipo">
+  <input type="hidden" name="nome_marca" id="nomeMarca">
+  <input type="hidden" name="descricao_texto" id="descricaoTexto">
+  <input type="hidden" name="descricao_audio" id="descricaoAudio">
+
+  <!-- CHAT -->
+  <div id="chatArea">
+    <div id="chat" class="chat"></div>
+
+    <div id="stepNome" class="input-area hidden">
+      <input type="text" id="inputNome" placeholder="Digite ou grave o nome da marca">
+      <button type="button" id="btnNome">🎙️</button>
+    </div>
+
+    <div id="stepRefs" class="upload hidden">
+      <label>
+        📎 Enviar referências
+        <input type="file" name="referencias[]" multiple>
+      </label>
+      <button type="button" id="btnPagamento">Continuar</button>
+    </div>
   </div>
 
-  <div id="inputTextAudio" class="input-area hidden">
-    <input type="text" id="textInput2" placeholder="Digite ou grave um áudio..." oninput="toggleButton()" />
-    <button id="actionBtn" onclick="handleAction()">🎙️</button>
+  <!-- PAGAMENTO -->
+  <div id="paymentArea" class="payment hidden">
+
+    <div class="card">
+      <strong>Serviço</strong><br>
+      <span id="servicoText"></span><br>
+      Prazo: até 3 dias<br>
+      Revisões: 1<br>
+      Valor: <strong>R$ XXX,00</strong>
+    </div>
+
+    <label>E-mail para entrega</label>
+    <input type="email" name="email" required>
+
+    <div class="card">
+      <strong>Pagamento Pix</strong><br>
+      trabalhosdedesigner@email.com
+    </div>
+
+    <div class="card">
+      <strong>Comprovante</strong>
+      <label class="upload">
+        📎 Anexar comprovante
+        <input type="file" name="comprovante" required>
+      </label>
+    </div>
+
+    <button class="confirm" type="submit">Confirmar pagamento</button>
   </div>
 
-  <div id="inputUpload" class="upload hidden">
-    <input type="file" id="fileInput" multiple />
-    <button onclick="finish()">Finalizar</button>
-  </div>
-</div>
+</form>
 
 <script>
-const chat = document.getElementById("chat");
-const inputText = document.getElementById("inputText");
-const inputTextAudio = document.getElementById("inputTextAudio");
-const inputUpload = document.getElementById("inputUpload");
+document.addEventListener("DOMContentLoaded", () => {
 
-const textInput = document.getElementById("textInput");
-const textInput2 = document.getElementById("textInput2");
-const actionBtn = document.getElementById("actionBtn");
+  const chat = document.getElementById("chat");
+  const stepNome = document.getElementById("stepNome");
+  const stepRefs = document.getElementById("stepRefs");
 
-let step = 0;
-let mediaRecorder;
-let audioChunks = [];
+  const inputNome = document.getElementById("inputNome");
+  const btnNome = document.getElementById("btnNome");
 
-// serviço anterior
-let tipoServico = localStorage.getItem("servico");
-
-if (!tipoServico) {
-  alert("Erro: Nenhum serviço selecionado.");
-  window.location.href = "index.html";
-}
-
-let formData = {
-  tipo: tipoServico,
-  nomeMarca: "",
-  descricao: "",
-  arquivos: []
-};
-
-function addMessage(text, type="bot") {
-  const msg = document.createElement("div");
-  msg.className = `msg ${type}`;
-  msg.innerText = text;
-  chat.appendChild(msg);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function botTyping(text, delay=800) {
-  setTimeout(() => addMessage(text, "bot"), delay);
-}
-
-function start() {
-  const nomeTipo = tipoServico === "logo" ? "Logotipo" : "Logo Animado";
-  botTyping(`Serviço selecionado: ${nomeTipo}`);
-  botTyping("Olá! Vou te ajudar com seu projeto 🙂", 1200);
-  botTyping("Para começar, qual é o nome da marca?", 2000);
-  setTimeout(() => inputText.classList.remove("hidden"), 2200);
-}
-
-function sendText() {
-  if (!textInput.value.trim()) return;
-
-  formData.nomeMarca = textInput.value.trim();
-  addMessage(formData.nomeMarca, "user");
-  textInput.value = "";
-  inputText.classList.add("hidden");
-  step++;
-  nextStep();
-}
-
-function toggleButton() {
-  actionBtn.innerText = textInput2.value.trim() ? "➤" : "🎙️";
-}
-
-function handleAction() {
-  if (textInput2.value.trim()) {
-    formData.descricao = textInput2.value.trim();
-    addMessage(formData.descricao, "user");
-    textInput2.value = "";
-    toggleButton();
-    inputTextAudio.classList.add("hidden");
-    step++;
-    nextStep();
-  } else {
-    recordAudio();
+  function addMsg(text, type="bot", delay=0) {
+    setTimeout(() => {
+      const d = document.createElement("div");
+      d.className = `msg ${type}`;
+      d.innerText = text;
+      chat.appendChild(d);
+      chat.scrollTop = chat.scrollHeight;
+    }, delay);
   }
-}
 
-function recordAudio() {
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.start();
-    actionBtn.innerText = "⏹️";
+  /* Serviço */
+  const tipoServico = localStorage.getItem("servico") || "logo";
+  const nomeServico = tipoServico === "logo" ? "Logotipo" : "Logo Animado";
 
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+  document.getElementById("tipo").value = tipoServico;
+  document.getElementById("servicoText").innerText = nomeServico;
 
-    mediaRecorder.onstop = () => {
-      addMessage("🎙️ Áudio enviado", "user");
-      audioChunks = [];
-      toggleButton();
-      inputTextAudio.classList.add("hidden");
-      step++;
-      nextStep();
-    };
-
-    actionBtn.onclick = () => {
-      mediaRecorder.stop();
-      actionBtn.onclick = handleAction;
-    };
-  });
-}
-
-function nextStep() {
-  if (step === 1) {
-    botTyping("Agora me conte um pouco sobre a ideia.");
-    botTyping("Pode escrever ou gravar um áudio.", 1200);
-    setTimeout(() => inputTextAudio.classList.remove("hidden"), 1500);
-  } else if (step === 2) {
-    botTyping("Agora envie referências visuais.");
-    setTimeout(() => inputUpload.classList.remove("hidden"), 1500);
-  }
-}
-
-function finish() {
-  const files = document.getElementById("fileInput").files;
-
-  if (files.length > 0) {
-    const base64Files = [];
-    const promises = [];
-
-    for (let file of files) {
-      promises.push(
-        new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = e => {
-            base64Files.push({
-              nome: file.name,
-              tipo: file.type,
-              conteudo: e.target.result
-            });
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        })
-      );
-    }
-
-    Promise.all(promises).then(() => {
-      formData.arquivos = base64Files;
-      finalizeSubmit();
-    });
-
-  } else {
-    finalizeSubmit();
-  }
-}
-
-function finalizeSubmit() {
-  addMessage("📎 Dados capturados!", "user");
-  inputUpload.classList.add("hidden");
-
-  localStorage.setItem("logoForm", JSON.stringify(formData));
-
-  botTyping("Perfeito! Já consigo iniciar seu projeto.");
-  botTyping("📌 1 revisão inclusa • Prazo de até 3 dias", 1200);
+  /* Conversa inicial (animada) */
+  addMsg(`Serviço selecionado: ${nomeServico}`);
+  addMsg("Olá! Vou te ajudar com seu projeto 🙂", "bot", 800);
+  addMsg("Para começar, qual é o nome da marca?", "bot", 1600);
 
   setTimeout(() => {
-    addMessage("Clique no botão abaixo para continuar ⬇️", "bot");
-    createPaymentButton();
+    stepNome.classList.remove("hidden");
   }, 1800);
-}
 
-function createPaymentButton() {
-  const btn = document.createElement("button");
-  btn.innerText = "Ir para área de pagamentos";
-  btn.style.marginTop = "10px";
-  btn.onclick = () => window.location.href = "pagamento.html";
-  document.querySelector(".chat-container").appendChild(btn);
-}
+  /* Troca automática 🎙️ ↔ ➤ */
+  inputNome.addEventListener("input", () => {
+    btnNome.innerText = inputNome.value.trim() ? "➤" : "🎙️";
+  });
 
-start();
+  let recognition;
+
+  btnNome.onclick = () => {
+    if (inputNome.value.trim()) {
+      enviarTexto();
+    } else {
+      iniciarAudio();
+    }
+  };
+
+  function enviarTexto() {
+    const v = inputNome.value.trim();
+    addMsg(v, "user");
+    document.getElementById("nomeMarca").value = v;
+    document.getElementById("descricaoTexto").value = v;
+    avancar();
+  }
+
+  function iniciarAudio() {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Seu navegador não suporta áudio.");
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.interimResults = false;
+
+    btnNome.innerText = "⏹️";
+
+    recognition.onresult = e => {
+      const texto = e.results[0][0].transcript;
+      addMsg("🎙️ " + texto, "user");
+      document.getElementById("nomeMarca").value = texto;
+      document.getElementById("descricaoAudio").value = texto;
+      avancar();
+    };
+
+    recognition.onend = () => {
+      btnNome.innerText = "🎙️";
+    };
+
+    recognition.start();
+  }
+
+  function avancar() {
+    stepNome.classList.add("hidden");
+    addMsg("Agora envie referências visuais.");
+    stepRefs.classList.remove("hidden");
+  }
+
+  document.getElementById("btnPagamento").onclick = () => {
+    document.getElementById("chatArea").classList.add("hidden");
+    document.getElementById("paymentArea").classList.remove("hidden");
+  };
+
+});
 </script>
 
 </body>
