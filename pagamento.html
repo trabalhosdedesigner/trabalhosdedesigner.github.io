@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pagamento • trabalhosdedesigner</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #0f0f0f;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: #151515;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .subtitle {
+      color: #aaa;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #1c1c1c;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    label {
+      font-size: 14px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 6px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    .qr {
+      display: flex;
+      justify-content: center;
+      margin: 16px 0;
+    }
+
+    .qr img {
+      width: 200px;
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px;
+    }
+
+    .pix-key {
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      word-break: break-all;
+      margin-bottom: 8px;
+    }
+
+    .copy-btn {
+      background: #2a2a2a;
+      border: none;
+      color: #fff;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    .upload {
+      border: 2px dashed #333;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .upload.success {
+      border-color: #2ecc71;
+      color: #2ecc71;
+    }
+
+    .upload input {
+      display: none;
+    }
+
+    button.confirm {
+      width: 100%;
+      padding: 14px;
+      background: #2ecc71;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Finalizar pagamento</h1>
+    <div class="subtitle">Pagamento via Pix • Entrega por e-mail</div>
+
+    <div class="card">
+      <strong>Serviço selecionado</strong>
+      Logotipo animado<br>
+      Prazo: até 3 dias úteis<br>
+      Revisões: 1<br>
+      Valor promocional: <strong>R$ XXX,00</strong>
+    </div>
+
+    <label>E-mail para confirmação do pagamento e entrega</label>
+    <input type="email" id="email" placeholder="seuemail@email.com" required>
+    <div class="hint">
+      📩 Usaremos este e-mail apenas para confirmar o pagamento e enviar o trabalho final.
+    </div>
+
+    <div class="card">
+      <strong>Pagamento via Pix</strong>
+      Escaneie o QR Code:
+      <div class="qr">
+        <!-- SUBSTITUA PELO SEU QR -->
+        <img src="https://via.placeholder.com/200x200.png?text=PIX+QR" alt="QR Code Pix">
+      </div>
+
+      Não conseguiu escanear?
+      <div class="pix-key" id="pixKey">
+        trabalhosdedesigner@email.com
+      </div>
+      <button class="copy-btn" onclick="copyPix()">Copiar chave Pix</button>
+    </div>
+
+    <div class="card">
+      <strong>Envie o comprovante</strong>
+      <label class="upload" id="uploadBox">
+        <input type="file" id="fileInput" accept="image/*,.pdf">
+        📎 Anexar comprovante
+      </label>
+    </div>
+
+    <button class="confirm" onclick="confirmPayment()">
+      Confirmar pagamento
+    </button>
+
+    <footer>
+      Pagamento seguro via Pix • Atendimento automatizado
+    </footer>
+  </div>
+
+  <script>
+    const uploadBox = document.getElementById("uploadBox");
+    const fileInput = document.getElementById("fileInput");
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length > 0) {
+        uploadBox.classList.add("success");
+        uploadBox.innerText = "✅ Comprovante anexado com sucesso";
+      }
+    });
+
+    function copyPix() {
+      const pix = document.getElementById("pixKey").innerText;
+      navigator.clipboard.writeText(pix);
+      alert("Chave Pix copiada!");
+    }
+
+    function confirmPayment() {
+      const email = document.getElementById("email").value;
+      if (!email) {
+        alert("Por favor, informe seu e-mail.");
+        return;
+      }
+
+      if (fileInput.files.length === 0) {
+        alert("Por favor, anexe o comprovante de pagamento.");
+        return;
+      }
+
+      alert(
+        "Comprovante enviado!\n\n" +
+        "Você receberá a confirmação do pagamento por e-mail."
+      );
+
+      // aqui futuramente entra integração com Formspree / EmailJS
+    }
+  </script>
+</body>
+</html>
