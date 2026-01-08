@@ -72,7 +72,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
-    emailjs.init("SUA_PUBLIC_KEY_AQUI");
+    emailjs.init("i7-1SUnikBYnyAzEk");
 
     const uploadBox = document.getElementById("uploadBox");
     const fileInput = document.getElementById("fileInput");
@@ -115,7 +115,7 @@
       const base64Comprovante = await convertToBase64(fileInput.files[0]);
 
       // Envia por EmailJS
-      emailjs.send("SEU_SERVICE_ID", "SEU_TEMPLATE_ID", {
+      emailjs.send("service_dnf7hfh", "template_8wsto4r", {
         tipo: form.tipo,
         nomeMarca: form.nomeMarca,
         descricao: form.descricao,
