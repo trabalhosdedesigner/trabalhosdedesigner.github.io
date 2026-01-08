@@ -24,6 +24,8 @@ body {
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 0 40px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
 }
 
 .chat {
@@ -102,11 +104,11 @@ button {
     <button id="actionBtn" onclick="handleAction()">🎙️</button>
   </div>
 
-<div id="inputUpload" class="upload hidden">
-  <input type="file" id="fileInput" multiple />
-  <button onclick="finish()">Finalizar</button>
+  <div id="inputUpload" class="upload hidden">
+    <input type="file" id="fileInput" multiple />
+    <button onclick="finish()">Finalizar</button>
+  </div>
 </div>
-
 
 <script>
 const chat = document.getElementById("chat");
@@ -122,6 +124,13 @@ const actionBtn = document.getElementById("actionBtn");
 let step = 0;
 let mediaRecorder;
 let audioChunks = [];
+
+// 🔹 OBJETO para armazenar os dados
+let formData = {
+  nomeMarca: "",
+  descricao: "",
+  arquivos: []
+};
 
 function addMessage(text, type="bot") {
   const msg = document.createElement("div");
@@ -143,6 +152,10 @@ function start() {
 
 function sendText() {
   if (!textInput.value.trim()) return;
+
+  // 🔹 SALVA NOME DA MARCA
+  formData.nomeMarca = textInput.value.trim();
+
   addMessage(textInput.value, "user");
   textInput.value = "";
   inputText.classList.add("hidden");
@@ -156,6 +169,10 @@ function toggleButton() {
 
 function handleAction() {
   if (textInput2.value.trim()) {
+
+    // 🔹 SALVA DESCRIÇÃO
+    formData.descricao = textInput2.value.trim();
+
     addMessage(textInput2.value, "user");
     textInput2.value = "";
     toggleButton();
@@ -177,6 +194,11 @@ function recordAudio() {
 
     mediaRecorder.onstop = () => {
       addMessage("🎙️ Áudio enviado", "user");
+
+      // Se quiser salvar áudio no futuro, só ativar:
+      // const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      // formData.audio = audioBlob;
+
       audioChunks = [];
       toggleButton();
       inputTextAudio.classList.add("hidden");
@@ -206,6 +228,7 @@ function finish() {
   const files = document.getElementById("fileInput").files;
 
   if (files.length > 0) {
+    formData.arquivos = [...files]; // 🔹 SALVA ARQUIVOS
     addMessage("📎 Anexos enviados", "user");
   } else {
     addMessage("Nenhum anexo enviado", "user");
@@ -215,8 +238,26 @@ function finish() {
 
   botTyping("Perfeito! Já consigo iniciar seu projeto.");
   botTyping("📌 1 revisão inclusa • Prazo de até 3 dias", 1200);
+
+  setTimeout(() => {
+    addMessage("Clique no botão abaixo para continuar ⬇️", "bot");
+    createPaymentButton();
+  }, 1800);
 }
 
+function createPaymentButton() {
+  const btn = document.createElement("button");
+  btn.innerText = "Ir para área de pagamentos";
+  btn.style.marginTop = "10px";
+  btn.onclick = goToPayment;
+  document.querySelector(".chat-container").appendChild(btn);
+}
+
+function goToPayment() {
+  // 🔹 SALVA TUDO NA LOCALSTORAGE
+  localStorage.setItem("logoForm", JSON.stringify(formData));
+  window.location.href = "pagamento.html";
+}
 
 start();
 </script>
